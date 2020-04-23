@@ -1,14 +1,15 @@
-// ==============================================================================
+//==============================================================================
 // Teya_DetailDescription.js
-// ------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Copyright (c) 2020 takuo
 // Released under the MIT license
 // http://opensource.org/licenses/mit-license.php
-// ------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Version
+// 1.0.1 2020/04/24 コードの一部の変更・最適化
 // 1.0.0 2020/04/19 初版
 // 制作 RPGツクールMV Ver1.6.2準拠
-// ==============================================================================
+//==============================================================================
 
 /*:
  * @plugindesc Ver1.0.0 アイテムやスキルの詳細な説明文を表示するウィンドウ機能を追加します。
@@ -50,19 +51,6 @@
  * 初期値: 詳細分類ワード
  * @default 詳細分類ワード
  * @type string
- *
- * @param secretTextType
- * @text 非表示テキストの扱い方
- * @desc 詳細表示スイッチの効果で非表示になる本文テキストをどう扱うか
- * @default 1
- * @type serect
- *
- * @option 省略
- * @value 1
- * @option 置換
- * @value 2
- * @option 掲示
- * @value 3
  *
  * @param soundEffect
  * @text ウィンドウ効果音
@@ -145,38 +133,31 @@
     'use strict';
     const PLUGIN_NAME = 'Teya_DetailDescription';
 
-    //=============================================================================
+    //==============================================================================
     // 静的ローカル関数・定数パラメータの定義
-    //=============================================================================
-    class LocalManager {
-        constructor() {
-            throw new Error('This is a static class');
-        }
-
-        // プラグインパラメータやプラグインコマンドパラメータの整形・チェック
-        static createPluginParameter(pluginName) {
-            const replaceValue = (key, value) => {
-                if (value === 'null' || (value[0] === '"' && value[value.length - 1] === '"')) {
-                    return value;
-                }
+    //==============================================================================
+    function prasePluginParameter(pluginName) {
+        return JSON.parse(
+            JSON.stringify(PluginManager.parameters(pluginName), (key, value) => {
                 try {
                     return JSON.parse(value);
                 } catch (e) {
-                    return value;
+                    try {
+                        return eval(value);
+                    } catch (e) {
+                        return value;
+                    }
                 }
-            };
-            const parameter = JSON.parse(JSON.stringify(PluginManager.parameters(pluginName), replaceValue));
-            PluginManager.setParameters(pluginName, parameter);
-            return parameter;
-        }
+            })
+        );
     }
 
-    const PLUGIN_PARAM = LocalManager.createPluginParameter(PLUGIN_NAME);
+    const PLUGIN_PARAM = prasePluginParameter(PLUGIN_NAME);
     Input.keyMapper[PLUGIN_PARAM.WindowOpenKey] = 'detailDescriptionWindowOpenKey';
 
-    //=============================================================================
+    //==============================================================================
     // Game_System
-    //=============================================================================
+    //==============================================================================
     Game_System.prototype.initDetailDescriptionWindowSeIfNeed = function () {
         if (!this._DetailDescriptionWindowSe) {
             this._DetailDescriptionWindowSe = this.createSe(PLUGIN_PARAM.soundEffect);
@@ -195,9 +176,9 @@
         return this._DetailDescriptionWindowSe;
     };
 
-    //=============================================================================
+    //==============================================================================
     // Window
-    //=============================================================================
+    //==============================================================================
     const _Window_Selectable_processHandling = Window_Selectable.prototype.processHandling;
     Window_Selectable.prototype.processHandling = function () {
         if (this.isOpenAndActive() && this.isHandled('detailDescriptionWindowOpenKey') && this.isDescriptionTriggered()) {
@@ -258,9 +239,9 @@
         return _Window_Message_isAnySubWindowActive.call(this) || this._detailDescriptionWindow.active;
     };
 
-    //-----------------------------------------------------------------------------
+    //------------------------------------------------------------------------------
     // Window_DetailDescription
-    //-----------------------------------------------------------------------------
+    //------------------------------------------------------------------------------
     function Window_DetailDescription(...args) {
         this.initialize(args);
     }
@@ -334,9 +315,9 @@
         return y;
     };
 
-    //=============================================================================
+    //==============================================================================
     // Scene
-    //=============================================================================
+    //==============================================================================
     Scene_Base.prototype.createDetailDescriptionWindow = function () {
         this._detailDescriptionWindow = new Window_DetailDescription();
         this._detailDescriptionWindow.setHandler('detailDescriptionWindowOpenKey', this.descriptionClose.bind(this));
